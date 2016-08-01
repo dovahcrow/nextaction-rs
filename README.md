@@ -48,5 +48,6 @@ So that your someday tasks won't show up on your nextaction list.
 You should either set environment variable `TODOIST_TOKEN`
 or call the commands with your token append.
 
-`git clone && cargo run --release --example main`
+To build the application, rust nightly is needed.
+Run: `git clone && cargo run --release --example main`
 
