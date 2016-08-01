@@ -5,9 +5,9 @@ version = "0.1.0"
 
 [dependencies]
 hyper = "0.9.10"
-serde = "0.8.0"
-serde_json = "0.8.0"
-serde_macros = "0.8.0"
+serde = "^0.7.0"
+serde_json = "^0.7.0"
+serde_macros = "^0.7.0"
 wrapped_enum = "0.1.3"
 log = "0.3.6"
 env_logger = "0.3.4"
@@ -15,6 +15,10 @@ url = "1.1.1"
 mime = "0.2.1"
 json = "0.10.0"
 uuid = { version = "0.2.3", features = ["serde", "v4"] }
+error-chain = "0.2.0"
+docopt = "0.6.82"
+docopt_macros = "0.6.85"
+rustc-serialize = "0.3.19"
 
 [lib]
 name = "nextaction"
