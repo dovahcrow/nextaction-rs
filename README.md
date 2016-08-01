@@ -44,6 +44,7 @@ Nextaction also supports a tag called `@someday`. The logic is:
 when Nextaction meets a task which should be tagged `@nextaction`
 but currently has tag `@someday`, it won't tag `@nextaction` to that task.
 So that your someday tasks won't show up on your nextaction list.
+
 ## Usage
 You should either set environment variable `TODOIST_TOKEN`
 or call the commands with your token append.
@@ -51,3 +52,8 @@ or call the commands with your token append.
 To build the application, rust nightly is needed.
 Run: `git clone && cargo run --release --example main`
 
+## Todo
+
+- [ ] Make nextaction-rs cargo-installable
+- [ ] Auto complete parent task && archive parent project if all sub tasks/projects are completed/archived
+- [ ] Add auto review system
