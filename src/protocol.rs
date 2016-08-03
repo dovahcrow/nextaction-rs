@@ -34,6 +34,10 @@ impl Todoist {
         }
     }
 
+    pub fn set_sync_token(&mut self, token: &str) {
+        self.sync_token = token.into();
+    }
+
     fn post<'a, I>(&self, data: I) -> Result<Response>
         where I: IntoIterator<Item = (&'a str, String)>
     {

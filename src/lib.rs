@@ -63,6 +63,8 @@ impl NextAction {
     pub fn sync(&mut self) -> Result<()> {
         let result = self.todoist.sync()?;
         debug!("Sync result: '{:?}'", result);
+        self.todoist.set_sync_token("*");
+        self.bag = BagOfThings::default();
         self.bag.merge(&result);
         debug!("Current Bag is '{:?}'", &self.bag);
 
