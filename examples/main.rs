@@ -17,7 +17,7 @@ use std::time::Duration;
 docopt!(Args,
         "
 Usage: nextaction for todoist
-    nextaction [<token>] [--interval <interval>]
+    nextaction [--token <token>] [--interval <interval>]
 ");
 
 
