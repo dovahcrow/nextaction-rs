@@ -15,6 +15,8 @@ use uuid::Uuid;
 
 use url::form_urlencoded;
 
+use std::time::Duration;
+
 #[allow(dead_code)]
 pub const VERSION: &'static str = "v7";
 const ENDPOINT: &'static str = "https://todoist.com/API/v7/sync";
@@ -27,10 +29,13 @@ pub struct Todoist {
 
 impl Todoist {
     pub fn new(token: &str) -> Todoist {
+        let mut client = Client::new();
+        client.set_read_timeout(Some(Duration::from_secs(30)));
+        client.set_write_timeout(Some(Duration::from_secs(30)));
         Todoist {
             token: token.into(),
             sync_token: "*".into(),
-            client: Client::new(),
+            client: client,
         }
     }
 
