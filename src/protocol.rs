@@ -2,8 +2,10 @@ use hyper::Client;
 use hyper::client::Response;
 use hyper::header::{ContentType, UserAgent, Accept, qitem};
 use hyper::status::StatusCode;
+use hyper::net::HttpsConnector;
+use hyper_rustls::TlsClient;
 
-use serde_json::{from_reader, from_str};
+use serde_json::{from_reader, from_str, to_string, Value as JsonValue};
 
 use errors::*;
 
@@ -29,7 +31,7 @@ pub struct Todoist {
 
 impl Todoist {
     pub fn new(token: &str) -> Todoist {
-        let mut client = Client::new();
+        let mut client = Client::with_connector(HttpsConnector::new(TlsClient::new()));
         client.set_read_timeout(Some(Duration::from_secs(30)));
         client.set_write_timeout(Some(Duration::from_secs(30)));
         Todoist {
@@ -62,10 +64,8 @@ impl Todoist {
     }
 
     pub fn sync(&mut self) -> Result<TodoistResponse> {
-        let resp = self.post(vec![
-            ("sync_token", self.sync_token.clone()),
-            ("resource_types", "[\"all\"]".into())
-            ])?;
+        let resp = self.post(vec![("sync_token", self.sync_token.clone()),
+                       ("resource_types", "[\"all\"]".into())])?;
 
         if resp.status != StatusCode::Ok {
             Err(format!("status code is: {}", resp.status).into())
@@ -99,7 +99,7 @@ impl Todoist {
 
 pub struct CommandManager<'a> {
     todoist: &'a mut Todoist,
-    commands: Vec<::json::JsonValue>,
+    commands: Vec<JsonValue>,
 }
 
 impl<'a> CommandManager<'a> {
@@ -113,51 +113,52 @@ impl<'a> CommandManager<'a> {
     pub fn add_label(&mut self, name: &str) -> (Uuid, Uuid) {
         let temp_id = Uuid::new_v4();
         let uuid = Uuid::new_v4();
-        self.commands.push(object! {
-            "type" => "label_add",
-            "args" => object! {
-                "name" => name
-            },
-            "temp_id" => format!("{}", temp_id),
-            "uuid" => format!("{}", uuid)
-        });
+        self.commands.push(json!({
+                "type": "label_add",
+                "args": json!({
+                    "name": name
+                }),
+                "temp_id": format!("{}", temp_id),
+                "uuid": format!("{}", uuid)
+            }
+        ));
         (temp_id, uuid)
     }
 
     pub fn set_item_label(&mut self, id: usize, label_ids: Vec<usize>) -> Uuid {
         let uuid = Uuid::new_v4();
-        self.commands.push(object! {
-            "type" => "item_update",
-            "uuid" => format!("{}", uuid),
-            "args" => object! {
-                "id" => id,
-                "labels" => label_ids
-            }
-        });
+        self.commands.push(json! ({
+            "type": "item_update",
+            "uuid": format!("{}", uuid),
+            "args": json! ({
+                "id": id,
+                "labels": label_ids
+            })
+        }));
         uuid
     }
 
     pub fn complete_item(&mut self, id: usize) -> Uuid {
         let uuid = Uuid::new_v4();
-        self.commands.push(object! {
-            "type" => "close_item",
-            "uuid" => format!("{}", uuid),
-            "args" => object! {
-                "id" => id
-            }
-        });
+        self.commands.push(json!({
+            "type": "close_item",
+            "uuid": format!("{}", uuid),
+            "args": json! ({
+                "id": id
+            })
+        }));
         uuid
     }
 
     pub fn archive_project(&mut self, id: usize) -> Uuid {
         let uuid = Uuid::new_v4();
-        self.commands.push(object! {
-            "type" => "project_archive",
-            "uuid" => format!("{}", uuid),
-            "args" => object! {
-                "ids" => array! [id]
-            }
-        });
+        self.commands.push(json!({
+            "type" : "project_archive",
+            "uuid" : format!("{}", uuid),
+            "args" : json!({
+                "ids" : json!([id])
+            })
+        }));
         uuid
     }
 
@@ -170,10 +171,7 @@ impl<'a> CommandManager<'a> {
             return Ok(CommandResponse::default());
         }
         let mut resp = self.todoist
-            .post(vec![       
-            ("commands", ::json::stringify(
-                self.commands
-        ))])?;
+            .post(vec![("commands", to_string(&self.commands)?)])?;
         let mut s = String::new();
         let _ = resp.read_to_string(&mut s);
         debug!("flush response is '{}'", s);
@@ -191,7 +189,7 @@ pub struct CommandResponse {
 #[cfg(test)]
 mod test {
     use std::env;
-    use ::protocol::Todoist;
+    use protocol::Todoist;
     use std::io::Read;
     use hyper::status::StatusCode;
     use hyper::client::Response;
@@ -220,7 +218,7 @@ mod test {
 
     #[test]
     fn order() {
-        use ::protocol::Project;
+        use protocol::Project;
         use std::collections::BTreeSet;
 
         let a = Project {

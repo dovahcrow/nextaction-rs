@@ -6,9 +6,9 @@ error_chain! {
     links { }
 
     foreign_links { 
-        HyperError, HyperError, "Hyper Error";
-        StdIOError, IOError, "IO Error";
-        SerdeError, JsonError, "JSON Error";
+        HyperError(HyperError);
+        IoError(StdIOError);
+        JsonError(SerdeError);
     }
 
     errors { 

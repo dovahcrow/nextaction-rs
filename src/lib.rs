@@ -1,22 +1,21 @@
-#![feature(question_mark, custom_derive, plugin)]
-#![plugin(serde_macros)]
 #![recursion_limit = "1024"]
 #![allow(dead_code)]
 
 #[macro_use]
 extern crate hyper;
+extern crate hyper_rustls;
 extern crate serde;
+#[macro_use]
 extern crate serde_json;
 #[macro_use]
-extern crate wrapped_enum;
+extern crate serde_derive;
+
 #[macro_use]
 extern crate log;
 extern crate env_logger;
 extern crate url;
 #[macro_use]
 extern crate mime;
-#[macro_use]
-extern crate json;
 extern crate uuid;
 #[macro_use]
 extern crate error_chain;
@@ -68,16 +67,20 @@ impl NextAction {
         self.bag.merge(&result);
         debug!("Current Bag is '{:?}'", &self.bag);
 
+        // Find the nextaction lable id
         if let Some(lb) = result.labels.iter().find(|l| l.name == self.nextaction_name) {
             self.nextaction_id = Some(lb.id);
         }
+        // if not found, create a new lable with the name
         if self.nextaction_id.is_none() {
             let lb = self.todoist.add_label(&self.nextaction_name)?;
             self.nextaction_id = Some(lb.id);
         }
+        // find the someday label id
         if let Some(lb) = result.labels.iter().find(|l| l.name == self.someday_name) {
             self.someday_id = Some(lb.id);
         }
+        // if not found, create a new label with the name
         if self.someday_id.is_none() {
             let lb = self.todoist.add_label(&self.someday_name)?;
             self.someday_id = Some(lb.id);
@@ -372,8 +375,8 @@ impl TaskTree {
 
 #[cfg(test)]
 mod test {
-    use ::NextAction;
-    use ::std::env;
+    use NextAction;
+    use std::env;
     #[test]
     fn build_tree() {
         let mut na = NextAction::new(&env::var("TODOIST_TOKEN").unwrap());
