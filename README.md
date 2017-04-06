@@ -46,14 +46,15 @@ but currently has tag `@someday`, it won't tag `@nextaction` to that task.
 So that your someday tasks won't show up on your nextaction list.
 
 ## Usage
-You should either set environment variable `TODOIST_TOKEN`
-or call the commands with your token append.
+You should set environment variable `NXTT_token` to your todoist token.
 
-To build the application, rust nightly is needed.
-Run: `git clone && cargo run --release --example main`
+To build the application, (rust)[`rustup.rs`] is needed.
+Run: `git clone && cargo run --release`
+
+### Docker Image
+A docker image is also available. Run it by `docker run -it -e NXTT_token=<your todoist token> wooya/nextaction`
 
 ## Todo
-
 - [ ] Make nextaction-rs cargo-installable
 - [ ] Auto complete parent task && archive parent project if all sub tasks/projects are completed/archived
 - [ ] Add auto review system
