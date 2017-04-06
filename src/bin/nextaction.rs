@@ -25,7 +25,6 @@ fn run() -> Result<()> {
 
     ::env_logger::init().unwrap();
 
-    {
         let token = c.get_str("TOKEN").expect("You need to set the NXTT_TOKEN");
 
         let interval = c.get_int("INTERVAL").unwrap_or(10) as u64;
@@ -47,5 +46,4 @@ fn run() -> Result<()> {
             };
         }?;
         unreachable!("unreachable!")
-    }
 }
