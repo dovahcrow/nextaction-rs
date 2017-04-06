@@ -1,7 +1,6 @@
 #![recursion_limit = "1024"]
 #![allow(dead_code)]
 
-#[macro_use]
 extern crate hyper;
 extern crate hyper_rustls;
 extern crate serde;
