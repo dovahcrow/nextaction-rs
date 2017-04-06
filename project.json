@@ -1,0 +1,8 @@
+{
+  "name": "nextaction",
+  "description": "",
+  "memory": 128,
+  "timeout": 5,
+  "role": "arn:aws:iam::647305654068:role/nextaction_lambda_function",
+  "environment": {}
+}

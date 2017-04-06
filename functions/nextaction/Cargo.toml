@@ -14,8 +14,9 @@ env_logger = "0.4"
 url = "1.4"
 mime = "0.2"
 uuid = { version = "0.4", features = ["serde", "v4"] }
-error-chain = "0.10"
+error-chain = { version = "0.10", features = [] }
 config = "0.4"
+rust-apex = "0.2"
 
 [lib]
 name = "nextaction"
