@@ -22,11 +22,12 @@ extern crate error_chain;
 use protocol::*;
 pub use errors::*;
 
-mod errors;
+pub mod errors;
 mod protocol;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
+use std::sync::Arc;
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -107,6 +108,23 @@ impl NextAction {
                        item.indent);
         }
         debug!("Tree is {:?}", self.tree);
+        Ok(())
+    }
+
+    pub fn step(&mut self) -> Result<()> {
+        info!("Step a round");
+        self.sync()?;
+        self.build_tree()?;
+        let mut m = self.todoist.manager();
+        for node in &self.tree.nodes {
+            traversal(node,
+                      &mut m,
+                      TraversalState::Unconstraint,
+                      self.nextaction_id.ok_or("nextaction_id is None".to_string())?,
+                      self.someday_id.ok_or("nextaction_id is None".to_string())?)
+        }
+        m.flush()?;
+        info!("Step finished");
         Ok(())
     }
 
@@ -215,10 +233,10 @@ fn traversal(node: &Node,
 
 #[derive(Default, Debug)]
 struct BagOfThings {
-    projects: BTreeSet<Rc<Project>>,
-    projects_map: BTreeMap<usize, Rc<Project>>,
-    items: BTreeSet<Rc<Item>>,
-    items_map: BTreeMap<usize, Rc<Item>>,
+    projects: BTreeSet<Arc<Project>>,
+    projects_map: BTreeMap<usize, Arc<Project>>,
+    items: BTreeSet<Arc<Item>>,
+    items_map: BTreeMap<usize, Arc<Item>>,
 }
 
 impl BagOfThings {
@@ -228,7 +246,7 @@ impl BagOfThings {
                 self.projects_map.remove(&project.id);
                 self.projects.remove(project);
             } else {
-                let rcbox = Rc::new(project.clone());
+                let rcbox = Arc::new(project.clone());
                 self.projects_map.insert(rcbox.id, rcbox.clone());
                 self.projects.remove(&rcbox);
                 self.projects.insert(rcbox);
@@ -240,7 +258,7 @@ impl BagOfThings {
                 self.items_map.remove(&item.id);
                 self.items.remove(item);
             } else {
-                let rcbox = Rc::new(item.clone());
+                let rcbox = Arc::new(item.clone());
                 self.items_map.insert(rcbox.id, rcbox.clone());
                 self.items.remove(&rcbox);
                 self.items.insert(rcbox);
@@ -263,8 +281,8 @@ fn push_level(to: &mut Vec<Node>, node: NodeType, level: usize) {
 
 #[derive(Debug)]
 pub enum NodeType {
-    ProjectNodeType(Rc<Project>),
-    ItemNodeType(Rc<Item>),
+    ProjectNodeType(Arc<Project>),
+    ItemNodeType(Arc<Item>),
 }
 
 impl NodeType {
