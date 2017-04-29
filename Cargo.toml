@@ -19,3 +19,6 @@ config = "0.4"
 
 [lib]
 name = "nextaction"
+
+[badges]
+travis-ci = { repository = "doomsplayer/nextaction-rs" }
