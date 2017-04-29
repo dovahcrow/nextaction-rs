@@ -1,7 +1,8 @@
 extern crate nextaction;
 use std::iter::FromIterator;
-use nextaction::Project;
 use std::collections::BTreeSet;
+
+use nextaction::{Project, RebuildInsertion};
 
 #[test]
 fn order1() {
@@ -22,9 +23,9 @@ fn order1() {
     };
 
     let mut bt = BTreeSet::new();
-    bt.insert(a.clone());
-    bt.insert(b.clone());
-    bt.insert(c.clone());
+    bt.rebuild_insert(a.clone());
+    bt.rebuild_insert(b.clone());
+    bt.rebuild_insert(c.clone());
 
     let v: Vec<Project> = bt.into_iter().collect();
     assert_eq!(v, vec![a, b, c]);
@@ -49,9 +50,9 @@ fn order2() {
     };
 
     let mut bt = BTreeSet::new();
-    bt.insert(a.clone());
-    bt.insert(b.clone());
-    bt.insert(c.clone());
+    bt.rebuild_insert(a.clone());
+    bt.rebuild_insert(b.clone());
+    bt.rebuild_insert(c.clone());
 
     let v: Vec<Project> = bt.into_iter().collect();
     assert_eq!(v, vec![c, b, a]);
@@ -85,10 +86,10 @@ fn order3() {
     };
 
     let mut bt = BTreeSet::new();
-    bt.insert(a.clone());
-    bt.insert(b.clone());
-    bt.insert(c.clone());
-    bt.replace(d.clone()); // in order to update an existing item, we need replace instead of insert.
+    bt.rebuild_insert(a.clone());
+    bt.rebuild_insert(b.clone());
+    bt.rebuild_insert(c.clone());
+    bt.rebuild_insert(d.clone());
 
     let v: Vec<Project> = BTreeSet::from_iter(bt.into_iter()).into_iter().collect();
     assert_eq!(v, vec![b, d, c]);

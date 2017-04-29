@@ -21,6 +21,7 @@ extern crate error_chain;
 
 pub mod errors;
 mod protocol;
+mod rebuild_insert;
 
 use std::collections::BTreeSet;
 use std::thread::sleep;
@@ -29,6 +30,7 @@ use std::time::Duration;
 pub use protocol::{Project, Item, CommandManager};
 pub use errors::*;
 pub use protocol::{Todoist, TodoistResponse};
+pub use rebuild_insert::RebuildInsertion;
 
 pub const NEXTACTION: &'static str = "nextaction";
 pub const SOMEDAY: &'static str = "someday";
@@ -252,9 +254,7 @@ impl BagOfThings {
             if project.is_archived == 1 {
                 self.projects.remove(project);
             } else {
-                // remove and re-insert a project, so that this will force btreeset to rebuild the tree
-                self.projects.remove(&project);
-                self.projects.insert(project.clone());
+                self.projects.rebuild_insert(project.clone());
             }
         }
 
@@ -264,9 +264,7 @@ impl BagOfThings {
             if item.is_deleted == 1 || item.is_archived == 1 {
                 self.items.remove(item);
             } else {
-                // remove and re-insert a item, so that this will force btreeset to rebuild the tree
-                self.items.remove(&item);
-                self.items.insert(item.clone());
+                self.items.rebuild_insert(item.clone());
             }
         }
     }
