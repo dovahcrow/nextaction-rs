@@ -1,3 +1,6 @@
+use std::collections::BTreeMap;
+use std::cmp::{PartialOrd, Ordering};
+
 use hyper::Client;
 use hyper::client::Response;
 use hyper::header::{ContentType, UserAgent, Accept, qitem};
@@ -8,10 +11,6 @@ use hyper_rustls::TlsClient;
 use serde_json::{from_reader, from_str, to_string, Value as JsonValue};
 
 use errors::*;
-
-use std::collections::BTreeMap;
-use std::cmp::PartialOrd;
-use std::cmp::Ordering;
 
 use uuid::Uuid;
 
@@ -64,8 +63,12 @@ impl Todoist {
     }
 
     pub fn sync(&mut self) -> Result<TodoistResponse> {
+        self.sync_fields(&["all"])
+    }
+
+    pub fn sync_fields(&mut self, fields: &[&str]) -> Result<TodoistResponse> {
         let resp = self.post(vec![("sync_token", self.sync_token.clone()),
-                       ("resource_types", "[\"all\"]".into())])?;
+                       ("resource_types", format!(r#"["{}"]"#, fields.join(r#"",""#)))])?;
 
         if resp.status != StatusCode::Ok {
             Err(format!("status code is: {}", resp.status).into())
@@ -186,87 +189,13 @@ pub struct CommandResponse {
     temp_id_mapping: BTreeMap<Uuid, usize>,
 }
 
-#[cfg(test)]
-mod test {
-    use std::env;
-    use protocol::Todoist;
-    use std::io::Read;
-    use hyper::status::StatusCode;
-    use hyper::client::Response;
-
-    fn init() -> Todoist {
-        ::env_logger::init().unwrap();
-        let token = env::var("TODOIST_TOKEN").unwrap();
-        let client = Todoist::new(&token);
-        client
-    }
-
-    #[test]
-    fn sync() {
-        let result = init().sync();
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn add_label() {
-        let mut client = init();
-        let mut m = client.manager();
-        println!("{:?}", m.add_label("helloword"));
-        println!("{:?}", m.add_label("kkk"));
-        println!("{:?}", m.flush().unwrap());
-    }
-
-    #[test]
-    fn order() {
-        use protocol::Project;
-        use std::collections::BTreeSet;
-
-        let a = Project {
-            id: 1,
-            item_order: 1,
-            name: "a".into(),
-            ..Default::default()
-        };
-        let b = Project {
-            id: 1,
-            item_order: 2,
-            ..Default::default()
-        };
-        let c = Project {
-            id: 2,
-            item_order: 1,
-            ..Default::default()
-        };
-        assert_eq!(a, b);
-        assert!(a < b);
-        assert!(a <= b);
-        assert!(a < c);
-        let mut bt = BTreeSet::new();
-        bt.insert(a.clone());
-        bt.insert(b.clone());
-        bt.insert(c.clone());
-
-        let v: Vec<Project> = bt.clone().into_iter().collect();
-        assert_eq!(v, vec![a, c, b]);
-
-        bt.replace(Project {
-            id: 1,
-            item_order: 1,
-            name: "b".into(),
-            ..Default::default()
-        });
-
-        println!("{:?}", bt);
-
-    }
-}
-
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct TodoistResponse {
-    pub projects: Vec<Project>,
-    pub notes: Vec<Note>,
-    pub items: Vec<Item>,
-    pub labels: Vec<Label>,
+    pub projects: Option<Vec<Project>>,
+    pub notes: Option<Vec<Note>>,
+    pub items: Option<Vec<Item>>,
+    pub labels: Option<Vec<Label>>,
+    pub user: Option<User>,
     full_sync: bool,
     pub sync_token: String,
 }
@@ -277,7 +206,7 @@ impl TodoistResponse {
     }
 
     pub fn get_label_by_name(&self, name: &str) -> Option<Label> {
-        self.labels.iter().find(|l| l.name == name).map(|l| l.clone())
+        self.labels.as_ref().and_then(|label| label.iter().find(|l| l.name == name).cloned())
     }
 }
 
@@ -324,20 +253,36 @@ pub struct Project {
     pub is_archived: usize,
 }
 
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+pub struct User {
+    id: i64,
+    token: String,
+    email: String,
+    full_name: String,
+    inbox_project: i64,
+    join_date: String,
+}
+
+
+// In rust, > >= < <= uses PartialOrd, == uses PartialEq, BTree* uses Ord
 macro_rules! comparable {
     ($t:ty) => {
         impl PartialEq for $t {
             fn eq(&self, other: &Self) -> bool {
+                // Result here doesn't matter BTree*'s result, return whatever you want.
                 self.id == other.id
             }
         }
 
+        // this impl is to sort all items in the list order we see in GUI, fron top to bottom
         impl PartialOrd for $t {
             fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
                 Some(if self.id == other.id {
                     Ordering::Equal
                 } else if self.item_order < other.item_order ||
-                        (self.item_order == other.item_order && self.id < other.id) {
+                        (self.item_order == other.item_order && self.id < other.id) { // the second situation is because when merging two
+                        // btrees, the new item may have same order as an old unupdated item, but after all items are merged,
+                        // there shouldn't any items with same order. So, same order with different IDs is just a transient situation.
                     Ordering::Less
                 } else {
                     Ordering::Greater

@@ -19,17 +19,16 @@ extern crate uuid;
 #[macro_use]
 extern crate error_chain;
 
-use protocol::*;
-pub use errors::*;
-
 pub mod errors;
 mod protocol;
 
-use std::collections::{BTreeMap, BTreeSet};
-use std::rc::Rc;
-use std::sync::Arc;
+use std::collections::BTreeSet;
 use std::thread::sleep;
 use std::time::Duration;
+
+pub use protocol::{Project, Item, CommandManager};
+pub use errors::*;
+pub use protocol::{Todoist, TodoistResponse};
 
 pub const NEXTACTION: &'static str = "nextaction";
 pub const SOMEDAY: &'static str = "someday";
@@ -68,7 +67,11 @@ impl NextAction {
         debug!("Current Bag is '{:?}'", &self.bag);
 
         // Find the nextaction lable id
-        if let Some(lb) = result.labels.iter().find(|l| l.name == self.nextaction_name) {
+        if let Some(lb) = result.labels
+            .as_ref()
+            .unwrap()
+            .iter()
+            .find(|l| l.name == self.nextaction_name) {
             self.nextaction_id = Some(lb.id);
         }
         // if not found, create a new lable with the name
@@ -77,7 +80,11 @@ impl NextAction {
             self.nextaction_id = Some(lb.id);
         }
         // find the someday label id
-        if let Some(lb) = result.labels.iter().find(|l| l.name == self.someday_name) {
+        if let Some(lb) = result.labels
+            .as_ref()
+            .unwrap()
+            .iter()
+            .find(|l| l.name == self.someday_name) {
             self.someday_id = Some(lb.id);
         }
         // if not found, create a new label with the name
@@ -233,35 +240,33 @@ fn traversal(node: &Node,
 
 #[derive(Default, Debug)]
 struct BagOfThings {
-    projects: BTreeSet<Arc<Project>>,
-    projects_map: BTreeMap<usize, Arc<Project>>,
-    items: BTreeSet<Arc<Item>>,
-    items_map: BTreeMap<usize, Arc<Item>>,
+    projects: BTreeSet<Project>,
+    items: BTreeSet<Item>,
 }
 
 impl BagOfThings {
     fn merge(&mut self, other: &TodoistResponse) {
-        for project in &other.projects {
+        for project in other.projects
+            .as_ref()
+            .unwrap() {
             if project.is_archived == 1 {
-                self.projects_map.remove(&project.id);
                 self.projects.remove(project);
             } else {
-                let rcbox = Arc::new(project.clone());
-                self.projects_map.insert(rcbox.id, rcbox.clone());
-                self.projects.remove(&rcbox);
-                self.projects.insert(rcbox);
+                // remove and re-insert a project, so that this will force btreeset to rebuild the tree
+                self.projects.remove(&project);
+                self.projects.insert(project.clone());
             }
         }
 
-        for item in &other.items {
+        for item in other.items
+            .as_ref()
+            .unwrap() {
             if item.is_deleted == 1 || item.is_archived == 1 {
-                self.items_map.remove(&item.id);
                 self.items.remove(item);
             } else {
-                let rcbox = Arc::new(item.clone());
-                self.items_map.insert(rcbox.id, rcbox.clone());
-                self.items.remove(&rcbox);
-                self.items.insert(rcbox);
+                // remove and re-insert a item, so that this will force btreeset to rebuild the tree
+                self.items.remove(&item);
+                self.items.insert(item.clone());
             }
         }
     }
@@ -281,8 +286,8 @@ fn push_level(to: &mut Vec<Node>, node: NodeType, level: usize) {
 
 #[derive(Debug)]
 pub enum NodeType {
-    ProjectNodeType(Arc<Project>),
-    ItemNodeType(Arc<Item>),
+    ProjectNodeType(Project),
+    ItemNodeType(Item),
 }
 
 impl NodeType {
@@ -387,32 +392,5 @@ impl TaskTree {
             }
         }
         None
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use NextAction;
-    use std::env;
-    #[test]
-    fn build_tree() {
-        let mut na = NextAction::new(&env::var("TODOIST_TOKEN").unwrap());
-        let _ = na.sync();
-        na.build_tree().unwrap();
-    }
-
-    #[test]
-    fn incremental_sync() {
-        use std::thread::sleep;
-        use std::time::Duration;
-
-        let mut na = NextAction::new(&env::var("TODOIST_TOKEN").unwrap());
-        let _ = na.sync();
-        na.build_tree().unwrap();
-
-        sleep(Duration::new(20, 0));
-
-        let _ = na.sync();
-        na.build_tree().unwrap()
     }
 }
