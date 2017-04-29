@@ -255,12 +255,12 @@ pub struct Project {
 
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub struct User {
-    id: i64,
-    token: String,
-    email: String,
-    full_name: String,
-    inbox_project: i64,
-    join_date: String,
+    pub id: i64,
+    pub token: String,
+    pub email: String,
+    pub full_name: String,
+    pub inbox_project: i64,
+    pub join_date: String,
 }
 
 
