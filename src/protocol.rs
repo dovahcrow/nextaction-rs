@@ -256,7 +256,7 @@ pub struct Project {
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub struct User {
     pub id: i64,
-    pub token: String,
+    pub token: Option<String>,
     pub email: String,
     pub full_name: String,
     pub inbox_project: i64,
