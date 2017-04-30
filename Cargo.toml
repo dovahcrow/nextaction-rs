@@ -1,7 +1,7 @@
 [package]
 authors = ["Young Wu <doomsplayer@gmail.com>"]
 name = "nextaction-rs"
-version = "0.2.1"
+version = "0.2.2-pre"
 description = "Add nextaction tag to todoist obeying omnifocus' way"
 license = "MIT"
 
