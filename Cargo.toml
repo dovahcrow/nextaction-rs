@@ -2,6 +2,8 @@
 authors = ["Young Wu <doomsplayer@gmail.com>"]
 name = "nextaction-rs"
 version = "0.2.0"
+description = "Add nextaction tag to todoist obeying omnifocus' way"
+license = "MIT"
 
 [dependencies]
 hyper = "0.10"
