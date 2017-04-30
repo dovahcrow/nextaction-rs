@@ -32,7 +32,7 @@ pub use errors::*;
 pub use protocol::{Todoist, TodoistResponse};
 pub use rebuild_insert::RebuildInsertion;
 
-pub const NEXTACTION: &'static str = "Nextaction";
+pub const NEXTACTION: &'static str = "NextAction";
 pub const SOMEDAY: &'static str = "Someday";
 pub const PARALLEL: char = '-';
 pub const SEQUENTIAL: char = ':';
